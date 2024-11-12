@@ -59,12 +59,12 @@ def calculate_power_ratios(data_points):
                 logger.debug(f"Ignoring charging period: {start} - {end}...")
                 continue
             charging.append(power_hour_ratio)
-        elif start['charging'] == False and end['charging'] == False:
-            if power_hour_ratio is None or power_hour_ratio > 0:
-                ignored_discharging_periods += 1
-                logger.debug(f"Ignoring discharging period: {start} - {end} --> {power_hour_ratio}...")
-                continue
-            discharging.append(power_hour_ratio)
+        # elif start['charging'] == False and end['charging'] == False:
+        #     if power_hour_ratio is None or power_hour_ratio > 0:
+        #         ignored_discharging_periods += 1
+        #         logger.debug(f"Ignoring discharging period: {start} - {end} --> {power_hour_ratio}...")
+        #         continue
+        #     discharging.append(power_hour_ratio)
         elif start['charging'] == True and end['charging'] == True:
             if power_hour_ratio is None or power_hour_ratio < 0:
                 ignored_charging_periods += 1
