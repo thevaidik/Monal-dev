@@ -217,6 +217,8 @@ void swizzle(Class c, SEL orig, SEL new);
 
 +(NSURLSession*) createEphemeralURLSession;
 
++(void) updateCurrentLogfilePath:(NSString*) logfilePath;
+
 @end
 
 NS_ASSUME_NONNULL_END

@@ -86,6 +86,8 @@ static NSString* _processID;
 static DDFileLogger* _fileLogger = nil;
 static char _origLogfilePath[1024] = "";
 static char _logfilePath[1024] = "";
+static char _origProfilePath[1024] = "";
+static char _profilePath[1024] = "";
 static NSObject* _isAppExtensionLock = nil;
 static NSMutableDictionary* _versionInfoCache;
 static MLStreamRedirect* _stdoutRedirector = nil;
@@ -118,6 +120,13 @@ static struct {
 } _crash_info __attribute__((section("__DATA, __crash_info"))) = { 5, 0, 0, 0, 0, 0, 0, 0 };
 #pragma pack()
 
+
+void exitLogging(void)
+{
+    DDLogInfo(@"exit() was called...");
+    [HelperTools flushLogsWithTimeout:0.250];
+    return;
+}
 
 // see: https://developer.apple.com/library/archive/qa/qa1361/_index.html
 // Returns true if the current process is being debugged (either 
@@ -225,14 +234,25 @@ static void addFilePathWithSize(const KSCrashReportWriter* writer, char* name, c
 
 static void crash_callback(const KSCrashReportWriter* writer)
 {
-    int copyRetval = asyncSafeCopyFile(_origLogfilePath, _logfilePath);
-    int errnoCopy = errno;
+    //copy current logfile
+    int logfileCopyRetval = asyncSafeCopyFile(_origLogfilePath, _logfilePath);
+    int errnoLogfileCopy = errno;
     writer->addStringElement(writer, "logfileCopied", "YES");
-    writer->addIntegerElement(writer, "logfileCopyResult", copyRetval);
-    writer->addIntegerElement(writer, "logfileCopyErrno", errnoCopy);
+    writer->addIntegerElement(writer, "logfileCopyResult", logfileCopyRetval);
+    writer->addIntegerElement(writer, "logfileCopyErrno", errnoLogfileCopy);
     addFilePathWithSize(writer, "logfileCopy", _logfilePath);
     //this comes last to make sure we see size differences if the logfile got written during crash data collection (could be other processes)
     addFilePathWithSize(writer, "currentLogfile", _origLogfilePath);
+    
+    //copy current profiling file (see https://leodido.dev/demystifying-profraw/)
+    int profileCopyRetval = asyncSafeCopyFile(_origProfilePath, _profilePath);
+    int errnoProfileCopy = errno;
+    writer->addStringElement(writer, "profileCopied", "YES");
+    writer->addIntegerElement(writer, "profileCopyResult", profileCopyRetval);
+    writer->addIntegerElement(writer, "profileCopyErrno", errnoProfileCopy);
+    addFilePathWithSize(writer, "profileCopy", _profilePath);
+    //this comes last to make sure we see size differences if the logfile got written during crash data collection (could be other processes)
+    addFilePathWithSize(writer, "currentProfile", _origProfilePath);
 }
 
 void logException(NSException* exception)
@@ -519,9 +539,6 @@ static void notification_center_logging(CFNotificationCenterRef center, void* ob
     else
         [self configureXcodeLogging];
     
-    [SwiftHelpers initSwiftHelpers];
-    [self activityLog];
-    
     //see https://stackoverflow.com/a/3738387
     CFNotificationCenterAddObserver(CFNotificationCenterGetLocalCenter(), 
         NULL, 
@@ -529,6 +546,15 @@ static void notification_center_logging(CFNotificationCenterRef center, void* ob
         NULL, 
         NULL,  
         CFNotificationSuspensionBehaviorDeliverImmediately);
+    
+    atexit(exitLogging);
+    
+    //set right path for llvm default.profraw file
+    NSString* profrawFilePath = [[HelperTools getContainerURLForPathComponents:@[@"default.profraw"]] path];
+    setenv("LLVM_PROFILE_FILE", profrawFilePath.UTF8String, 1);
+    
+    [SwiftHelpers initSwiftHelpers];
+    [self activityLog];
 }
 
 +(void) configureDefaultAudioSession
@@ -2198,15 +2224,18 @@ static void notification_center_logging(CFNotificationCenterRef center, void* ob
     else
         DDLogInfo(@"Crash monitoring active now: %d", handler.monitoring);
     
-    //store data globally for later retrieval by our crash_callback() (_origLogfilePath and _logfilePath)
-    strncpy(_origLogfilePath, self.fileLogger.currentLogFileInfo.filePath.UTF8String, sizeof(_logfilePath)-1);
-    _origLogfilePath[sizeof(_origLogfilePath)-1] = '\0';
+    [HelperTools updateCurrentLogfilePath:self.fileLogger.currentLogFileInfo.filePath];
+    
+    //store data globally for later retrieval by our crash_callback() (_origProfilePath and _profilePath)
+    NSString* profrawFilePath = [[HelperTools getContainerURLForPathComponents:@[@"default.profraw"]] path];
+    strncpy(_origProfilePath, profrawFilePath.UTF8String, sizeof(_profilePath)-1);
+    _origProfilePath[sizeof(_origProfilePath)-1] = '\0';
     //use the same id for our logfile copy as for the main report (allows to delete all logfile copies for which no crash report exists)
     //KSCrash increments the id by one every new crash --> the next id used by kscrash will be this one
     uint64_t nextCrashId = kscrs_getNextCrashReport(NULL) + 1;
-    snprintf(_logfilePath, sizeof(_logfilePath)-1, "%s/Reports/%s-log-%016llx.rawlog", handler.basePath.UTF8String, _crashBundleName, nextCrashId);
-    _logfilePath[sizeof(_logfilePath)-1] = '\0';
-    DDLogVerbose(@"KSCrash: _origLogfilePath=%s, _logfilePath=%s", _origLogfilePath, _logfilePath);
+    snprintf(_profilePath, sizeof(_profilePath)-1, "%s/Reports/%s-profile-%016llx.profraw", handler.basePath.UTF8String, _crashBundleName, nextCrashId);
+    _profilePath[sizeof(_profilePath)-1] = '\0';
+    DDLogVerbose(@"KSCrash: _origProfilePath=%s, _profilePath=%s", _origProfilePath, _profilePath);
     
     //clean up orphan rawlog copies
     [self cleanupRawlogCrashcopies];
@@ -2217,6 +2246,21 @@ static void notification_center_logging(CFNotificationCenterRef center, void* ob
     DDLogDebug(@"KSCrash report files: %@", directoryContentsReports);
     
     //[[KSCrash sharedInstance] reportUserException:@"test" reason:@"dummy test" language:@"dylang" lineOfCode:nil stackTrace:nil logAllThreads:NO terminateProgram:YES];
+}
+
++(void) updateCurrentLogfilePath:(NSString*) logfilePath
+{
+    KSCrash* handler = [KSCrash sharedInstance];
+    
+    //store data globally for later retrieval by our crash_callback() (_origLogfilePath and _logfilePath)
+    strncpy(_origLogfilePath, logfilePath.UTF8String, sizeof(_logfilePath)-1);
+    _origLogfilePath[sizeof(_origLogfilePath)-1] = '\0';
+    //use the same id for our logfile copy as for the main report (allows to delete all logfile copies for which no crash report exists)
+    //KSCrash increments the id by one every new crash --> the next id used by kscrash will be this one
+    uint64_t nextCrashId = kscrs_getNextCrashReport(NULL) + 1;
+    snprintf(_logfilePath, sizeof(_logfilePath)-1, "%s/Reports/%s-log-%016llx.rawlog", handler.basePath.UTF8String, _crashBundleName, nextCrashId);
+    _logfilePath[sizeof(_logfilePath)-1] = '\0';
+    DDLogVerbose(@"KSCrash: _origLogfilePath=%s, _logfilePath=%s", _origLogfilePath, _logfilePath);
 }
 
 +(BOOL) isAppExtension
