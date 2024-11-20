@@ -89,6 +89,8 @@ static char _logfilePath[1024] = "";
 static char _origProfilePath[1024] = "";
 static char _profilePath[1024] = "";
 static NSObject* _isAppExtensionLock = nil;
+static NSObject* _suspensionHandlingLock = nil;
+static BOOL _suspensionHandlingIsSuspended = NO;
 static NSMutableDictionary* _versionInfoCache;
 static MLStreamRedirect* _stdoutRedirector = nil;
 static MLStreamRedirect* _stderrRedirector = nil;
@@ -383,6 +385,8 @@ static void notification_center_logging(CFNotificationCenterRef center, void* ob
 
 +(void) initialize
 {
+    _suspensionHandlingLock = [NSObject new];
+    _suspensionHandlingIsSuspended = NO;
     _isAppExtensionLock = [NSObject new];
     _versionInfoCache = [NSMutableDictionary new];
     
@@ -2082,6 +2086,30 @@ static void notification_center_logging(CFNotificationCenterRef center, void* ob
     [_stdoutRedirector flushWithTimeout:timeout];
     [DDLog flushLog];
     [MLUDPLogger flushWithTimeout:timeout];
+}
+
++(void) signalSuspension
+{
+    DDLogVerbose(@"Suspending logger queue...");
+    [HelperTools flushLogsWithTimeout:0.100];
+    @synchronized(_suspensionHandlingLock) {
+        dispatch_suspend([DDLog loggingQueue]);
+        _suspensionHandlingIsSuspended = YES;
+    }
+    DDLogVerbose(@"Posting kMonalIsFreezed notification now...");
+    [[NSNotificationCenter defaultCenter] postNotificationName:kMonalIsFreezed object:nil];
+}
+
++(void) signalResumption
+{
+    @synchronized(_suspensionHandlingLock) {
+        if(_suspensionHandlingIsSuspended)
+        {
+            DDLogVerbose(@"Resuming logger queue...");
+            dispatch_resume([DDLog loggingQueue]);
+            _suspensionHandlingIsSuspended = NO;
+        }
+    }
 }
 
 +(void) configureXcodeLogging
