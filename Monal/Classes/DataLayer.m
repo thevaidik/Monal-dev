@@ -385,12 +385,14 @@ static NSDateFormatter* dbFormatter;
 
 -(BOOL) addSelfChatForAccount:(NSNumber*) accountID
 {
-    BOOL encrypt = NO;
+    return [self.db boolWriteTransaction:^{
+        BOOL encrypt = NO;
 #ifndef DISABLE_OMEMO
-        encrypt = [[HelperTools defaultsDB] boolForKey:@"OMEMODefaultOn"];
+            encrypt = [[HelperTools defaultsDB] boolForKey:@"OMEMODefaultOn"];
 #endif// DISABLE_OMEMO
-    NSDictionary* accountDetails = [self detailsForAccount:accountID];
-    return [self.db executeNonQuery:@"INSERT INTO buddylist ('account_id', 'buddy_name', 'full_name', 'nick_name', 'muc', 'muc_nick', 'encrypt') VALUES(?, ?, ?, ?, ?, ?, ?) ON CONFLICT(account_id, buddy_name) DO UPDATE SET subscription='both';" andArguments:@[accountID, [NSString stringWithFormat:@"%@@%@", accountDetails[kUsername], accountDetails[kDomain]], @"", @"", @0, @"", @(encrypt)]];
+        NSDictionary* accountDetails = [self detailsForAccount:accountID];
+        return [self.db executeNonQuery:@"INSERT INTO buddylist ('account_id', 'buddy_name', 'full_name', 'nick_name', 'muc', 'muc_nick', 'encrypt') VALUES(?, ?, ?, ?, ?, ?, ?) ON CONFLICT(account_id, buddy_name) DO UPDATE SET subscription='both';" andArguments:@[accountID, [NSString stringWithFormat:@"%@@%@", accountDetails[kUsername], accountDetails[kDomain]], @"", @"", @0, @"", @(encrypt)]];
+    }];
 }
 
 -(BOOL) addContact:(NSString*) contact forAccount:(NSNumber*) accountID nickname:(NSString*) nickName
