@@ -690,6 +690,13 @@ public extension UIViewController {
 // Interfaces between ObjectiveC/Storyboards and SwiftUI
 @objc
 class SwiftuiInterface : NSObject {
+    @objc
+    func makeChatView(for contact: MLContact) -> UIViewController {
+        let host = UIHostingController(rootView:AnyView(EmptyView()))
+        host.rootView = AnyView(ChatView(contact:ObservableKVOWrapper<MLContact>(contact)))
+        return host
+    }
+    
     @objc(makeAccountPickerForContacts:andCallType:)
     func makeAccountPicker(for contacts: [MLContact], and callType: UInt) -> UIViewController {
         let delegate = SheetDismisserProtocol()
