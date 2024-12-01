@@ -1,8 +1,8 @@
 name: Xcode Dependencies
 
 on:
-  schedule:
-    - cron: '17 13 * * *'
+  #schedule:
+  #  - cron: '17 13 * * *'
   workflow_dispatch:
 
 permissions:
