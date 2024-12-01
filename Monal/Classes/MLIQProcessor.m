@@ -333,6 +333,7 @@ $$
                 DDLogWarn(@"Got roster remove request for MUC, ignoring it (possibly even triggered by us).");
             else
             {
+                [[DataLayer sharedInstance] deleteContactRequest:contactObj];
                 [[DataLayer sharedInstance] removeBuddy:contact[@"jid"] forAccount:account.accountID];
                 [contactObj removeShareInteractions];
                 [[MLNotificationQueue currentQueue] postNotificationName:kMonalContactRemoved object:account userInfo:@{@"contact": contactObj}];
@@ -371,7 +372,7 @@ $$
                                              andAccount:account.accountID];
             
             NSSet* groups = [NSSet setWithArray:[contactNode find:@"group#"]];
-            DDLogVerbose(@"Setting following groups: %@ for contact %@", groups, contact[@"jid"]);
+            DDLogVerbose(@"Setting roster groups for contact %@: ", contact[@"jid"], groups);
             [[DataLayer sharedInstance] setGroups:groups
                                        forContact:contact[@"jid"]
                                         inAccount:account.accountID];
