@@ -2101,10 +2101,11 @@ static void notification_center_logging(CFNotificationCenterRef center, void* ob
             [HelperTools flushLogsWithTimeout:0.100];
             dispatch_suspend([DDLog loggingQueue]);
             _suspensionHandlingIsSuspended = YES;
+            
+            DDLogVerbose(@"Posting kMonalFrozen notification now...");
+            [[NSNotificationCenter defaultCenter] postNotificationName:kMonalFrozen object:nil];
         }
     }
-    DDLogVerbose(@"Posting kMonalIsFreezed notification now...");
-    [[NSNotificationCenter defaultCenter] postNotificationName:kMonalIsFreezed object:nil];
 }
 
 +(void) signalResumption
@@ -2115,6 +2116,9 @@ static void notification_center_logging(CFNotificationCenterRef center, void* ob
             DDLogVerbose(@"Resuming logger queue...");
             dispatch_resume([DDLog loggingQueue]);
             _suspensionHandlingIsSuspended = NO;
+            
+            DDLogVerbose(@"Posting kMonalUnfrozen notification now...");
+            [[NSNotificationCenter defaultCenter] postNotificationName:kMonalUnfrozen object:nil];
         }
     }
 }

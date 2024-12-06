@@ -39,6 +39,9 @@
 {
     [HelperTools initSystem];
     
+    //resume logging and other core tasks
+    [HelperTools signalResumption];
+    
     //init IPC
     [IPC initializeForProcess:@"ShareSheetExtension"];
     
@@ -158,6 +161,7 @@
             [self.extensionContext completeRequestReturningItems:@[] completionHandler:^(BOOL expired __unused) {
                 if(saved > 0)
                     [self openMainApp];
+                [HelperTools signalSuspension];
             }];
         }
     };
@@ -181,7 +185,6 @@
                                                                                 message:message preferredStyle:UIAlertControllerStyleAlert];
                     [unknownItemWarning addAction:[UIAlertAction actionWithTitle:NSLocalizedString(@"Abort", @"") style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
                         [unknownItemWarning dismissViewControllerAnimated:YES completion:nil];
-                        [self.extensionContext completeRequestReturningItems:@[] completionHandler:nil];
                         loading--;
                         checkIfDone();
                     }]];

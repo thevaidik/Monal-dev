@@ -133,7 +133,7 @@
     [NotificationService setAppexCleanShutdownStatus:YES];
     
     DDLogInfo(@"Now killing appex process, goodbye...");
-    [HelperTools flushLogsWithTimeout:0.100];
+    [HelperTools signalSuspension];
     exit(0);
 }
 
@@ -424,6 +424,9 @@ static BOOL warnUnclean = NO;
     
     handlers = [NSMutableArray new];
     
+    //resume logging and other core tasks
+    [HelperTools signalResumption];
+    
     //init IPC
     [IPC initializeForProcess:@"NotificationServiceExtension"];
     [MLProcessLock initializeForProcess:@"NotificationServiceExtension"];
@@ -602,7 +605,7 @@ static BOOL warnUnclean = NO;
 #endif
 
         DDLogInfo(@"Committing suicide...");
-        [DDLog flushLog];
+        [HelperTools signalSuspension];
         exit(0);
 
 /*
