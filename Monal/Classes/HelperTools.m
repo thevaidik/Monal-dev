@@ -81,6 +81,15 @@ extern int64_t kscrs_getNextCrashReport(char* crashReportPathBuffer);
 -(void) swizzled_setObject:(id) value forKey:(NSString*) defaultName;
 @end
 
+//make method visible
+@interface DDLog()
+-(void) queueLogMessage:(DDLogMessage*) logMessage asynchronously:(BOOL) asyncFlag;
+@end
+
+@interface DDLog (AllowQueueFreeze)
+-(void) swizzled_queueLogMessage:(DDLogMessage*) logMessage asynchronously:(BOOL) asyncFlag;
+@end
+
 static char* _crashBundleName = "UnifiedReport";
 static NSString* _processID;
 static DDFileLogger* _fileLogger = nil;
@@ -89,8 +98,8 @@ static char _logfilePath[1024] = "";
 static char _origProfilePath[1024] = "";
 static char _profilePath[1024] = "";
 static NSObject* _isAppExtensionLock = nil;
-static NSObject* _suspensionHandlingLock = nil;
-static BOOL _suspensionHandlingIsSuspended = NO;
+static NSObject* _suspensionHandling_lock = nil;
+static BOOL _suspensionHandling_isSuspended = NO;
 static NSMutableDictionary* _versionInfoCache;
 static MLStreamRedirect* _stdoutRedirector = nil;
 static MLStreamRedirect* _stderrRedirector = nil;
@@ -381,12 +390,36 @@ static void notification_center_logging(CFNotificationCenterRef center, void* ob
 }
 @end
 
+@implementation DDLog (AllowQueueFreeze)
+
+-(void) swizzled_queueLogMessage:(DDLogMessage*) logMessage asynchronously:(BOOL) asyncFlag
+{
+    //don't do sync logging for any message (usually ERROR), while the global logging queue is suspended
+    @synchronized(_suspensionHandling_lock) {
+        return [self swizzled_queueLogMessage:logMessage asynchronously:_suspensionHandling_isSuspended ? YES : asyncFlag];
+    }
+}
+
+//see https://stackoverflow.com/a/13326633 and https://fek.io/blog/method-swizzling-in-obj-c-and-swift/
++(void) load
+{
+    if(self == DDLog.self)
+    {
+        static dispatch_once_t onceToken;
+        dispatch_once(&onceToken, ^{
+            swizzle([self class], @selector(queueLogMessage:asynchronously:), @selector(swizzled_queueLogMessage:asynchronously:));
+        });
+    }
+}
+
+@end
+
 @implementation HelperTools
 
 +(void) initialize
 {
-    _suspensionHandlingLock = [NSObject new];
-    _suspensionHandlingIsSuspended = NO;
+    _suspensionHandling_lock = [NSObject new];
+    _suspensionHandling_isSuspended = NO;
     _isAppExtensionLock = [NSObject new];
     _versionInfoCache = [NSMutableDictionary new];
     
@@ -2103,13 +2136,13 @@ static void notification_center_logging(CFNotificationCenterRef center, void* ob
 
 +(void) signalSuspension
 {
-    @synchronized(_suspensionHandlingLock) {
-        if(!_suspensionHandlingIsSuspended)
+    @synchronized(_suspensionHandling_lock) {
+        if(!_suspensionHandling_isSuspended)
         {
             DDLogVerbose(@"Suspending logger queue...");
             [HelperTools flushLogsWithTimeout:0.100];
             dispatch_suspend([DDLog loggingQueue]);
-            _suspensionHandlingIsSuspended = YES;
+            _suspensionHandling_isSuspended = YES;
             
             DDLogVerbose(@"Posting kMonalFrozen notification now...");
             [[NSNotificationCenter defaultCenter] postNotificationName:kMonalFrozen object:nil];
@@ -2119,12 +2152,12 @@ static void notification_center_logging(CFNotificationCenterRef center, void* ob
 
 +(void) signalResumption
 {
-    @synchronized(_suspensionHandlingLock) {
-        if(_suspensionHandlingIsSuspended)
+    @synchronized(_suspensionHandling_lock) {
+        if(_suspensionHandling_isSuspended)
         {
             DDLogVerbose(@"Resuming logger queue...");
             dispatch_resume([DDLog loggingQueue]);
-            _suspensionHandlingIsSuspended = NO;
+            _suspensionHandling_isSuspended = NO;
             
             DDLogVerbose(@"Posting kMonalUnfrozen notification now...");
             [[NSNotificationCenter defaultCenter] postNotificationName:kMonalUnfrozen object:nil];
