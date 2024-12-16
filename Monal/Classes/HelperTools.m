@@ -543,13 +543,22 @@ static void notification_center_logging(CFNotificationCenterRef center, void* ob
     else
         [self configureXcodeLogging];
     
-    //see https://stackoverflow.com/a/3738387
-    CFNotificationCenterAddObserver(CFNotificationCenterGetLocalCenter(), 
-        NULL, 
-        notification_center_logging, 
-        NULL, 
-        NULL,  
-        CFNotificationSuspensionBehaviorDeliverImmediately);
+    //enable logging of all NSNotifications only on debug builds or if the debug menu was activated
+#ifdef DEBUG
+    BOOL enableNotificationObserver = YES;
+#else
+    BOOL enableNotificationObserver = [[HelperTools defaultsDB] boolForKey:@"showLogInSettings"];
+#endif
+    if(enableNotificationObserver)
+    {
+        //see https://stackoverflow.com/a/3738387
+        CFNotificationCenterAddObserver(CFNotificationCenterGetLocalCenter(),
+            NULL,
+            notification_center_logging,
+            NULL,
+            NULL,
+            CFNotificationSuspensionBehaviorDeliverImmediately);
+    }
     
     atexit(exitLogging);
     
