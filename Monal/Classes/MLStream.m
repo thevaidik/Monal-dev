@@ -910,7 +910,7 @@
             return [HelperTools sha256:cert];
         }
         else if([@"1.2.840.10045.4.1" isEqualToString:signatureAlgo])           //ecdsa-with-SHA1
-            return [HelperTools sha256:cert];
+            return [HelperTools sha256:cert];       //use sha256 as per RFC 5929
         else if([@"1.2.840.10045.4.3.1" isEqualToString:signatureAlgo])         //ecdsa-with-SHA224  (not supported, return sha256, will fail cb)
         {
             DDLogError(@"Using sha256 for unsupported OID %@ (ecdsa-with-SHA224)", signatureAlgo);
@@ -924,7 +924,7 @@
             return [HelperTools sha256:cert];
         }
         else if([@"1.2.840.10045.4.3.4" isEqualToString:signatureAlgo])         //ecdsa-with-SHA512
-            return [HelperTools sha256:cert];
+            return [HelperTools sha512:cert];
         else if([@"1.3.6.1.5.5.7.6.32" isEqualToString:signatureAlgo])          //id-ecdsa-with-shake128  (not supported, return sha256, will fail cb)
         {
             DDLogError(@"Using sha256 for unsupported OID %@ (id-ecdsa-with-shake128)", signatureAlgo);
