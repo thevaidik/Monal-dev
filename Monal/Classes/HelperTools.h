@@ -26,6 +26,8 @@
 #define showErrorOnAlpha(account, description, ...)                         do { [HelperTools showErrorOnAlpha:[NSString stringWithFormat:description, ##__VA_ARGS__] withNode:nil andAccount:account andFile:(char*)__FILE__ andLine:__LINE__ andFunc:(char*)__func__]; } while(0)
 #define showXMLErrorOnAlpha(account, node, description, ...)                do { [HelperTools showErrorOnAlpha:[NSString stringWithFormat:description, ##__VA_ARGS__] withNode:node andAccount:account andFile:(char*)__FILE__ andLine:__LINE__ andFunc:(char*)__func__]; } while(0)
 
+#define errorString(error, ...)                                             metamacro_if_eq(0, metamacro_argcount(__VA_ARGS__))( emptyDefault(((NSError*)error).userInfo[NSLocalizedDescriptionKey], @"", NSLocalizedString(@"Unknown error!", @"")) )( emptyDefault(((NSError*)error).userInfo[NSLocalizedDescriptionKey], @"", NSLocalizedString(metamacro_head(__VA_ARGS__), @"")) )
+
 NS_ASSUME_NONNULL_BEGIN
 
 @class AnyPromise;
