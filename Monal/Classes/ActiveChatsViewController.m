@@ -26,6 +26,7 @@
 #import "MLIQProcessor.h"
 #import "Quicksy_Country.h"
 #import <Monal-Swift.h>
+#import "chatViewController.h"
 
 #define prependToViewQueue(firstArg, ...)                           metamacro_if_eq(0, metamacro_argcount(__VA_ARGS__))([self prependToViewQueue:firstArg withId:MLViewIDUnspecified andFile:(char*)__FILE__ andLine:__LINE__ andFunc:(char*)__func__])(_prependToViewQueue(firstArg, __VA_ARGS__))
 #define _prependToViewQueue(ownId, block)                           [self prependToViewQueue:block withId:ownId andFile:(char*)__FILE__ andLine:__LINE__ andFunc:(char*)__func__]
@@ -1057,19 +1058,37 @@ static NSMutableSet* _pushWarningDisplayed;
                 };
                 [self scrollToContact:contact];
                 [self showDetailViewController:chatView sender:self];
-                if(completion != nil)
-                    completion(@YES);
             };
             
             //open chat (make sure we have an active buddy for it and add it to our ui, if needed)
             //but don't animate this if the contact is already present in our list
             [[DataLayer sharedInstance] addActiveBuddies:contact.contactJid forAccount:contact.accountID];
             if([[self getChatArrayForSection:pinnedChats] containsObject:contact] || [[self getChatArrayForSection:unpinnedChats] containsObject:contact])
-                presentator();
-            else
-                [self insertOrMoveContact:contact completion:^(BOOL finished __unused) {
+            {
+                if([[HelperTools defaultsDB] boolForKey:@"showNewChatView"])
                     presentator();
+                else
+                {
+                    [self scrollToContact:contact];
+                    [self performSegueWithIdentifier:@"showConversation" sender:contact];
+                }
+                if(completion != nil)
+                    completion(@YES);
+            }
+            else
+            {
+                [self insertOrMoveContact:contact completion:^(BOOL finished __unused) {
+                    if([[HelperTools defaultsDB] boolForKey:@"showNewChatView"])
+                        presentator();
+                    else
+                    {
+                        [self scrollToContact:contact];
+                        [self performSegueWithIdentifier:@"showConversation" sender:contact];
+                    }
+                    if(completion != nil)
+                        completion(@YES);
                 }];
+            }
         }];
     }];
 }
@@ -1106,6 +1125,16 @@ static NSMutableSet* _pushWarningDisplayed;
 -(void) prepareForSegue:(UIStoryboardSegue*) segue sender:(id) sender
 {
     DDLogInfo(@"Got segue identifier '%@'", segue.identifier);
+    
+    if([segue.identifier isEqualToString:@"showConversation"])
+    {
+        UINavigationController* nav = segue.destinationViewController;
+        chatViewController* chatVC = (chatViewController*)nav.topViewController;
+        UIBarButtonItem* barButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"" style:UIBarButtonItemStylePlain target:nil action:nil];
+        self.navigationItem.backBarButtonItem = barButtonItem;
+        [chatVC setupWithContact:sender];
+    }
+    
     if([segue.identifier isEqualToString:@"showDetails"])
     {
         UIViewController* detailsViewController = [[SwiftuiInterface new] makeContactDetails:sender];
@@ -1523,8 +1552,9 @@ static NSMutableSet* _pushWarningDisplayed;
 -(chatViewController* _Nullable) currentChatView
 {
     //TODO: this has to be adapted to the new chatui
-    return nil;
-    /*
+    if([[HelperTools defaultsDB] boolForKey:@"showNewChatView"])
+        return nil;
+    
     NSArray* controllers = ((UINavigationController*)self.splitViewController.viewControllers[0]).viewControllers;
     chatViewController* chatView = nil;
     if(controllers.count > 1)
@@ -1532,7 +1562,6 @@ static NSMutableSet* _pushWarningDisplayed;
     if(![chatView isKindOfClass:NSClassFromString(@"chatViewController")])
         chatView = nil;
     return chatView;
-    */
 }
 
 -(void) scrollToContact:(MLContact*) contact
