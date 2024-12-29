@@ -92,7 +92,7 @@ static const int pingFreqencyMinutes = 5;       //about the same Conversations u
     [self upgradeIntegerUserSettingsIfUnset:@"AutodownloadFiletransfersWifiMaxSize" toDefault:32*1024*1024];     // 32 MiB
 
     // upgrade default image quality
-    [self upgradeFloatUserSettingsIfUnset:@"ImageUploadQuality" toDefault:0.50];
+    [self upgradeFloatUserSettingsIfUnset:@"ImageUploadQuality" toDefault:(float)0.80];
 
     // remove old settings from shareSheet outbox
     [self removeObjectUserSettingsIfSet:@"lastRecipient"];
