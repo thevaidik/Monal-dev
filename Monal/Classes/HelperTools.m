@@ -2231,6 +2231,12 @@ static void notification_center_logging(CFNotificationCenterRef center, void* ob
     _stdoutRedirector = [[MLStreamRedirect alloc] initWithStream:stdout];
     printf("stdout redirection complete...");
     
+    //redirect apple system logs, too
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    [DDASLLogCapture start];
+#pragma clang diagnostic pop
+    
     NSString* containerUrl = [[HelperTools getContainerURLForPathComponents:@[]] path];
     DDLogInfo(@"Logfile dir: %@", containerUrl);
     
