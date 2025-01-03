@@ -93,6 +93,7 @@ extern int64_t kscrs_getNextCrashReport(char* crashReportPathBuffer);
 static char* _crashBundleName = "UnifiedReport";
 static NSString* _processID;
 static DDFileLogger* _fileLogger = nil;
+static uint64_t _nextCrashId = 0;
 static char _origLogfilePath[1024] = "";
 static char _logfilePath[1024] = "";
 static char _origProfilePath[1024] = "";
@@ -2300,6 +2301,7 @@ static void notification_center_logging(CFNotificationCenterRef center, void* ob
         DDLogError(@"Failed to get directory contents while cleaning up rawlog crashcopies...");
         return;
     }
+    DDLogInfo(@"Current crash report ids: %@", reportIds);
     
     //parts taken from https://github.com/kstenerud/KSCrash/blob/9e72c018a0ba455a89cf5770dea6e1d5258744b6/Source/KSCrash/Recording/KSCrashReportStore.c#L75
     char scanFormat[100];
@@ -2309,12 +2311,13 @@ static void notification_center_logging(CFNotificationCenterRef center, void* ob
         NSString* file = [NSString stringWithFormat:@"%@/%@", reportpath, filename];
         int64_t reportID = 0;
         sscanf(filename.UTF8String, scanFormat, &reportID);
+        DDLogVerbose(@"Checking crash report id: %@", @(reportID));
         if(reportID == 0)
         {
             DDLogError(@"Could not extract crash report id from '%@', ignoring file!", file);
             continue;
         }
-        if(![reportIds containsObject:[NSNumber numberWithLongLong:reportID]])
+        if(![reportIds containsObject:@(reportID)])
         {
             DDLogInfo(@"Deleting orphan rawlog copy at '%@'...", file);
             [[NSFileManager defaultManager] removeItemAtPath:file error:&error];
@@ -2357,6 +2360,9 @@ static void notification_center_logging(CFNotificationCenterRef center, void* ob
     else
         DDLogInfo(@"Crash monitoring active now: %d", handler.monitoring);
     
+    //KSCrash increments the id by one every new crash --> the next id used by kscrash will be this one
+    _nextCrashId = kscrs_getNextCrashReport(NULL) + 1;
+    
     [HelperTools updateCurrentLogfilePath:self.fileLogger.currentLogFileInfo.filePath];
     
     //store data globally for later retrieval by our crash_callback() (_origProfilePath and _profilePath)
@@ -2364,9 +2370,7 @@ static void notification_center_logging(CFNotificationCenterRef center, void* ob
     strncpy(_origProfilePath, profrawFilePath.UTF8String, sizeof(_profilePath)-1);
     _origProfilePath[sizeof(_origProfilePath)-1] = '\0';
     //use the same id for our logfile copy as for the main report (allows to delete all logfile copies for which no crash report exists)
-    //KSCrash increments the id by one every new crash --> the next id used by kscrash will be this one
-    uint64_t nextCrashId = kscrs_getNextCrashReport(NULL) + 1;
-    snprintf(_profilePath, sizeof(_profilePath)-1, "%s/Reports/%s-profile-%016llx.profraw", handler.basePath.UTF8String, _crashBundleName, nextCrashId);
+    snprintf(_profilePath, sizeof(_profilePath)-1, "%s/Reports/%s-profile-%016llx.profraw", handler.basePath.UTF8String, _crashBundleName, _nextCrashId);
     _profilePath[sizeof(_profilePath)-1] = '\0';
     DDLogVerbose(@"KSCrash: _origProfilePath=%s, _profilePath=%s", _origProfilePath, _profilePath);
     
@@ -2389,9 +2393,7 @@ static void notification_center_logging(CFNotificationCenterRef center, void* ob
     strncpy(_origLogfilePath, logfilePath.UTF8String, sizeof(_logfilePath)-1);
     _origLogfilePath[sizeof(_origLogfilePath)-1] = '\0';
     //use the same id for our logfile copy as for the main report (allows to delete all logfile copies for which no crash report exists)
-    //KSCrash increments the id by one every new crash --> the next id used by kscrash will be this one
-    uint64_t nextCrashId = kscrs_getNextCrashReport(NULL) + 1;
-    snprintf(_logfilePath, sizeof(_logfilePath)-1, "%s/Reports/%s-log-%016llx.rawlog", handler.basePath.UTF8String, _crashBundleName, nextCrashId);
+    snprintf(_logfilePath, sizeof(_logfilePath)-1, "%s/Reports/%s-log-%016llx.rawlog", handler.basePath.UTF8String, _crashBundleName, _nextCrashId);
     _logfilePath[sizeof(_logfilePath)-1] = '\0';
     DDLogVerbose(@"KSCrash: _origLogfilePath=%s, _logfilePath=%s", _origLogfilePath, _logfilePath);
 }
