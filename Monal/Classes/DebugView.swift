@@ -137,27 +137,26 @@ struct CrashTestingView: View {
                 Group {
                     Button("Try to call unknown handler method") {
                         DispatchQueue.global(qos: .default).async(execute: {
-                            HelperTools.flushLogs(withTimeout: 0.100)
                             let handler = MLHandler(delegate: self, handlerName: "IDontKnowThis", andBoundArguments: [:])
                             handler.call(withArguments: nil)
                         })
                     }
                     Button("Bad Access Crash") {
-                        HelperTools.flushLogs(withTimeout: 0.100)
                         let delegate: AnyClass? = NSClassFromString("MonalAppDelegate")
                         print(delegate.unsafelyUnwrapped.audiovisualTypes())
                         
                     }
-                    Button("Assertion Crash") {
+                    Button("MLAssert Crash") {
                         HelperTools.flushLogs(withTimeout: 0.100)
+                        MLAssert(false, "MLAssert_example")
+                    }
+                    Button("Assertion Crash") {
                         assert(false)
                     }
                     Button("Fatal Error Crash") {
-                        HelperTools.flushLogs(withTimeout: 0.100)
                         fatalError("fatalError_example")
                     }
                     Button("Nil Crash") {
-                        HelperTools.flushLogs(withTimeout: 0.100)
                         let crasher:Int? = nil
                         print(crasher!)
                     }

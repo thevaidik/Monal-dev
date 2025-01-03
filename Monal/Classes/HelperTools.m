@@ -277,9 +277,7 @@ void logException(NSException* exception)
     NSString* prefix = @"CRASH";
 #endif
     //log error and flush all logs
-    [DDLog flushLog];
     DDLogError(@"*****************\n%@(%@): %@\nUserInfo: %@\nStack Trace: %@", prefix, [exception name], [exception reason], [exception userInfo], [exception callStackSymbols]);
-    [DDLog flushLog];
     [HelperTools flushLogsWithTimeout:0.250];
 }
 
@@ -2232,6 +2230,8 @@ static void notification_center_logging(CFNotificationCenterRef center, void* ob
 
 +(void) configureLogging
 {
+    NSError* error;
+    
     //network logger (start as early as possible)
     MLUDPLogger* udpLogger = [MLUDPLogger new];
     [DDLog addLogger:udpLogger];
@@ -2245,10 +2245,17 @@ static void notification_center_logging(CFNotificationCenterRef center, void* ob
     printf("stdout redirection complete...");
     
     //redirect apple system logs, too
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-    [DDASLLogCapture start];
-#pragma clang diagnostic pop
+    /*
+    OSLogStore* osLogStore = [OSLogStore storeWithScope:OSLogStoreCurrentProcessIdentifier error:&error];
+    if(error)
+        DDLogError(@"Failed to open os log store: %@", error);
+    else
+    {
+        dispatch_async(, ^{
+            [osLogStore entriesEnumeratorAndReturnError:&error];
+        });
+    }
+    */
     
     NSString* containerUrl = [[HelperTools getContainerURLForPathComponents:@[]] path];
     DDLogInfo(@"Logfile dir: %@", containerUrl);
@@ -2265,7 +2272,6 @@ static void notification_center_logging(CFNotificationCenterRef center, void* ob
     
     DDLogDebug(@"Sorted logfiles: %@", [logFileManager sortedLogFileInfos]);
     DDLogDebug(@"Current logfile: %@", self.fileLogger.currentLogFileInfo.filePath);
-    NSError* error;
     NSDictionary* attrs = [[NSFileManager defaultManager] attributesOfItemAtPath:self.fileLogger.currentLogFileInfo.filePath error:&error];
     if(error)
         DDLogError(@"File attributes error: %@", error);
