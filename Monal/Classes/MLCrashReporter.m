@@ -66,7 +66,7 @@
     NSString* jsonName = @"JSON Report (*.json)";
     id<KSCrashReportFilter> logfileFilter = [KSCrashReportFilterAddMLLogfile filter];
     NSString* logfileName = @"Logfile (*.rawlog.gz)";
-    id<KSCrashReportFilter> profrawFilter = [KSCrashReportFilterAddMLLogfile filter];
+    id<KSCrashReportFilter> profrawFilter = [KSCrashReportFilterAddProfraw filter];
     NSString* profrawName = @"Profile (*.profraw)";
     handler.sink = [KSCrashReportFilterPipeline filterWithFilters:
                         [KSCrashReportFilterAlert filter],
