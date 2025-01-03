@@ -2347,7 +2347,7 @@ static void notification_center_logging(CFNotificationCenterRef center, void* ob
     handler.maxReportCount = 4;
     handler.deadlockWatchdogInterval = 0;       // no main thread watchdog
     handler.userInfo = @{
-        @"isAppex": @([self isAppExtension]),
+        @"isAppex": bool2str([self isAppExtension]),
         @"processName": [[[NSBundle mainBundle] executablePath] lastPathComponent],
         @"bundleName": nilWrapper([[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleName"]),
         @"appVersion": [self appBuildVersionInfoFor:MLVersionTypeLog],
