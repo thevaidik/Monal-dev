@@ -516,7 +516,8 @@ $$
     {
         //if we have mimeype and size the http head request was already done, else we did not even do a head request
         if(msg.filetransferMimeType != nil && msg.filetransferSize != nil)
-            return @{
+        {
+            let retval = @{
                 @"url": msg.messageText,
                 @"filename": filename,
                 @"needsDownloading": @YES,
@@ -525,16 +526,23 @@ $$
                 @"fileExtension": [filename pathExtension],
                 @"historyID": msg.messageDBId,
             };
+            DDLogVerbose(@"Returning image info: %@", retval);
+            return retval;
+        }
         else
-            return @{
+        {
+            let retval = @{
                 @"url": msg.messageText,
                 @"filename": filename,
                 @"needsDownloading": @YES,
                 @"fileExtension": [filename pathExtension],
                 @"historyID": msg.messageDBId,
             };
+            DDLogVerbose(@"Returning image info: %@", retval);
+            return retval;
+        }
     }
-    return @{
+    let retval = @{
         @"url": msg.messageText,
         @"filename": filename,
         @"needsDownloading": @NO,
@@ -545,6 +553,8 @@ $$
         @"fileExtension": [filename pathExtension],
         @"historyID": msg.messageDBId,
     };
+    DDLogVerbose(@"Returning image info: %@", retval);
+    return retval;
 }
 
 +(void) deleteFileForMessage:(MLMessage*) msg

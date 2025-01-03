@@ -57,6 +57,7 @@ struct ImageViewer: View {
     init(delegate: SheetDismisserProtocol, info: [String:AnyObject]) throws {
         self.delegate = delegate
         self.info = info
+        DDLogDebug("Loading image for info: \(String(describing:self.info))")
     }
     
     var body: some View {
@@ -108,6 +109,8 @@ struct ImageViewer: View {
             controlsVisible.toggle()
         }.task {
             await loadPreviewAndConfigurePlayer()
+        }.onAppear {
+            DDLogDebug("Displaying image for info: \(String(describing:self.info))")
         }
     }
     
