@@ -246,6 +246,8 @@ static const int pingFreqencyMinutes = 5;       //about the same Conversations u
     _onMobile = NO;
     _isConnectBlocked = NO;
     
+    [SAMKeychain setAccessibilityType:kSecAttrAccessibleAfterFirstUnlock];
+    
     [self defaultSettings];
     [self setPushToken:nil];       //load push settings from defaultsDB (can be overwritten later on in mainapp, but *not* in appex)
 
@@ -634,7 +636,6 @@ static const int pingFreqencyMinutes = 5;       //about the same Conversations u
 
 -(void) updatePassword:(NSString*) password forAccount:(NSNumber*) accountID
 {
-    [SAMKeychain setAccessibilityType:kSecAttrAccessibleAfterFirstUnlock];
     [SAMKeychain setPassword:password forService:kMonalKeychainName account:accountID.stringValue];
     xmpp* xmpp = [self getEnabledAccountForID:accountID];
     [xmpp.connectionProperties.identity updatPassword:password];
@@ -779,7 +780,6 @@ static const int pingFreqencyMinutes = 5;       //about the same Conversations u
 {
     if(accountID != nil && password != nil)
     {
-        [SAMKeychain setAccessibilityType:kSecAttrAccessibleAfterFirstUnlock];
         [SAMKeychain setPassword:password forService:kMonalKeychainName account:accountID.stringValue];
         [self connectAccount:accountID];
     }

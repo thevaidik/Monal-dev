@@ -4643,11 +4643,9 @@ NSString* const kStanza = @"stanza";
     [iqNode changePasswordForUser:self.connectionProperties.identity.user newPassword:newPass];
 
     //temporarily store the new password in the keychain.
-    //this way, we don't store the password in the db if the app is put
-    //in the background while awaiting the iq result.
+    //this way, we don't store the password in the db when serializing the handler
     NSString* uuid = [[NSUUID UUID] UUIDString];
-    [SAMKeychain setAccessibilityType:kSecAttrAccessibleAfterFirstUnlock];
-    [SAMKeychain setPassword:newPass forService:uuid account:self.connectionProperties.identity.jid];
+    [SAMKeychain setPassword:newPass forService:kMonalTmpKeychainName account:uuid];
 
     [self sendIq:iqNode withHandler:$newHandlerWithInvalidation(MLIQProcessor, handlePasswordChange,handlePasswordChangeInvalidation, $ID(uuid), $ID(promise))];
     return [promise toAnyPromise];
