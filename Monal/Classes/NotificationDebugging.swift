@@ -11,22 +11,32 @@ import OrderedCollections
 class NotificationDebuggingDefaultsDB: ObservableObject {
     @defaultsDB("lastAppexStart")
     var lastAppexStart: Date?
+    
+    @defaultsDB("selectedPushServer")
+    var selectedPushServer: String
 }
 
 struct NotificationDebugging: View {
     private let applePushEnabled: Bool
     private let applePushToken: String
     private let xmppAccountInfo: [xmpp]
-
+    
     private let availablePushServers: Dictionary<String, String>
-
+    
     @State private var pushPermissionEnabled = false // state because we get this value through an async call
     @State private var showPushToken = false
-
-    @State private var selectedPushServer: String
     
     @ObservedObject var notificationDebuggingDefaultsDB = NotificationDebuggingDefaultsDB()
+    
+    init() {
+        self.applePushEnabled = MLXMPPManager.sharedInstance().hasAPNSToken;
+        self.applePushToken = MLXMPPManager.sharedInstance().pushToken;
+        self.xmppAccountInfo = MLXMPPManager.sharedInstance().connectedXMPP as! [xmpp]
 
+        // push server selector
+        self.availablePushServers = HelperTools.getAvailablePushServers()
+    }
+    
     var body: some View {
         Form {
             Group {
@@ -83,14 +93,13 @@ struct NotificationDebugging: View {
                 }
             }
             Section(header: Text("Pushserver Region").font(.title3)) {
-                Picker(selection: $selectedPushServer, label: Text("Push Server")) {
+                Picker(selection: $notificationDebuggingDefaultsDB.selectedPushServer, label: Text("Push Server")) {
                     ForEach(self.availablePushServers.sorted(by: >), id: \.key) { pushServerFqdn, pushServerName in
                         Text(pushServerName).tag(pushServerFqdn)
                     }
                 }.pickerStyle(.menu)//.menuStyle(.borderlessButton)
-                .onChange(of: selectedPushServer) { pushServerFqdn in
-                    DDLogDebug("Selected \(pushServerFqdn) as push server")
-                    HelperTools.defaultsDB().setValue(pushServerFqdn, forKey: "selectedPushServer")
+                .onChange(of: notificationDebuggingDefaultsDB.selectedPushServer) { pushServerFqdn in
+                    DDLogDebug("Selected \(pushServerFqdn) as push server...")
                     // enable push again to switch to the selected server
                     for account in self.xmppAccountInfo {
                         account.enablePush()
@@ -112,16 +121,6 @@ struct NotificationDebugging: View {
                 self.pushPermissionEnabled = (settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional);
             }
         });
-    }
-
-    init() {
-        self.applePushEnabled = MLXMPPManager.sharedInstance().hasAPNSToken;
-        self.applePushToken = MLXMPPManager.sharedInstance().pushToken;
-        self.xmppAccountInfo = MLXMPPManager.sharedInstance().connectedXMPP as! [xmpp]
-
-        // push server selector
-        self.availablePushServers = HelperTools.getAvailablePushServers()
-        self.selectedPushServer = HelperTools.defaultsDB().object(forKey: "selectedPushServer") as! String
     }
 }
 
