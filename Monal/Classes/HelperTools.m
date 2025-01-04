@@ -136,7 +136,9 @@ static struct {
 void exitLogging(void)
 {
     DDLogInfo(@"exit() was called...");
-    [HelperTools flushLogsWithTimeout:0.250];
+    //make sure to unfreeze logging before flushing everything and terminating
+    [HelperTools activateTerminationLogging];
+    [HelperTools flushLogsWithTimeout:0.025];
     return;
 }
 
@@ -511,10 +513,8 @@ static void notification_center_logging(CFNotificationCenterRef center, void* ob
     _crash_info.backtrace = backtrace.UTF8String;
     
     //log error and flush all logs
-    [DDLog flushLog];
     DDLogError(@"*****************\n%@\n%@", abort_msg, backtrace);
-    [DDLog flushLog];
-    [HelperTools flushLogsWithTimeout:0.250];
+    [HelperTools flushLogsWithTimeout:0.025];
     
     //now abort everything
     abort();
@@ -2208,6 +2208,18 @@ static void notification_center_logging(CFNotificationCenterRef center, void* ob
             
             DDLogVerbose(@"Posting kMonalUnfrozen notification now...");
             [[NSNotificationCenter defaultCenter] postNotificationName:kMonalUnfrozen object:nil];
+        }
+    }
+}
+
++(void) activateTerminationLogging
+{
+    @synchronized(_suspensionHandling_lock) {
+        if(_suspensionHandling_isSuspended)
+        {
+            DDLogVerbose(@"Activating logging for app termination...");
+            dispatch_resume([DDLog loggingQueue]);
+            _suspensionHandling_isSuspended = NO;
         }
     }
 }
