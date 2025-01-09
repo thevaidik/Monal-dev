@@ -325,6 +325,11 @@ $$
     _shutdownPending = NO;
     _wasFrozen = NO;
     
+    //register BGTasks as early as possible to make sure a subsequent app termination
+    //without proper "bootup" won't crash on unknown bgtask identifiers
+    DDLogInfo(@"calling MonalAppDelegate configureBackgroundTasks");
+    [self configureBackgroundTasks];
+    
     //[self runParserTests];
     //[self runSDPTests];
     //[HelperTools flushLogsWithTimeout:0.250];
@@ -537,10 +542,6 @@ $$
 
     //handle message notifications by initializing the MLNotificationManager
     [MLNotificationManager sharedInstance];
-    
-    //register BGTask
-    DDLogInfo(@"calling MonalAppDelegate configureBackgroundTasks");
-    [self configureBackgroundTasks];
     
     // Play audio even if phone is in silent mode
     [HelperTools configureDefaultAudioSession];
