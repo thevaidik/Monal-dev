@@ -659,7 +659,7 @@ static NSMutableSet* _pushWarningDisplayed;
 #endif
         
         prependToViewQueue(MLViewIDWelcomeLoginView, (^(PMKResolver resolve) {
-#ifdef IS_QUICKSY
+#if defined(IS_QUICKSY) || defined(IS_PRAV)
             if([[DataLayer sharedInstance] enabledAccountCnts].intValue == 0)
             {
                 DDLogDebug(@"Showing account registration view...");

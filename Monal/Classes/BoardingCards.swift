@@ -29,6 +29,8 @@ struct OnboardingView: View {
     @ObservedObject var onboardingState = OnboardingState()
     @State private var currentIndex = 0
     
+
+    
     var body: some View {
         ZStack {
             /// Ensure the ZStack takes the entire area
@@ -47,7 +49,11 @@ struct OnboardingView: View {
                                     } label: {
                                         Label("Back", systemImage: "chevron.left")
                                             .labelStyle(.iconOnly)
+#if IS_PRAV
+                                            .foregroundColor(Color(red: 0.8, green: 0.2, blue: 0.8))
+#else
                                             .foregroundColor(.blue)
+#endif
                                             .padding(10)
                                     }
                                 } else {
@@ -59,7 +65,11 @@ struct OnboardingView: View {
                                     if let imageName = card.imageName {
                                         Image(systemName: imageName)
                                             .font(.custom("MarkerFelt-Wide", size: 80))
+#if IS_PRAV
+                                            .foregroundColor(Color(red: 0.8, green: 0.2, blue: 0.8))
+#else
                                             .foregroundColor(.blue)
+#endif
                                             .accessibilityHidden(true)
                                         
                                     }
@@ -118,7 +128,11 @@ struct OnboardingView: View {
                                             Text(card.nextText ?? NSLocalizedString("Close", comment:"onboarding"))
                                                 .fontWeight(.bold)
                                                 .padding(10)
+#if IS_PRAV
+                                                .background(Color(red: 0.8, green: 0.2, blue: 0.8))
+#else
                                                 .background(Color.blue)
+#endif
                                                 .foregroundColor(.white)
                                                 .cornerRadius(10)
                                         }
@@ -272,7 +286,11 @@ struct TakeMeToSettingsView: View {
                 Text("Take me to settings")
                     .fontWeight(.bold)
                     .padding(10)
+#if IS_PRAV
+                    .background(Color(red: 0.8, green: 0.2, blue: 0.8))
+#else
                     .background(Color.blue)
+#endif
                     .foregroundColor(.white)
                     .cornerRadius(10)
             }

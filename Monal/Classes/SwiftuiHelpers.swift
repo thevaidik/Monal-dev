@@ -687,8 +687,13 @@ class SwiftuiInterface : NSObject {
         let host = UIHostingController(rootView:AnyView(EmptyView()))
         delegate.host = host
 #if IS_QUICKSY
+        print("DEBUG: Using Quicksy registration")
+        host.rootView = AnyView(Quicksy_RegisterAccount(delegate:delegate))
+#elseif IS_PRAV
+        print("DEBUG: Using Prav registration (Quicksy-style)")
         host.rootView = AnyView(Quicksy_RegisterAccount(delegate:delegate))
 #else
+        print("DEBUG: Using Monal registration")
         host.rootView = AnyView(AddTopLevelNavigation(withDelegate:delegate, to:RegisterAccount(delegate:delegate, registerData:registerData)))
 #endif
         return host
