@@ -172,6 +172,27 @@ func createOnboardingView(delegate: SheetDismisserProtocol) -> some View {
             nextText: "Accept and continue"
         ),
     ]
+#elseif IS_PRAV
+    let cards = [
+        OnboardingCard(
+            title: Text("Welcome to Prav !"),
+            description: nil,
+            imageName: "lock.shield",
+            articleText: Text("""
+            Prav is built for privacy-first communication using the secure XMPP protocol with end-to-end encryption.
+            
+            🔐 Privacy by Design: Your conversations are encrypted and private by default
+            
+            🌐 Decentralized Network: No single point of failure or control
+            
+            🛡️ Security First: Built with modern cryptographic standards
+            
+            Join the community that values your digital privacy and freedom.
+            """),
+            customView: nil,
+            nextText: "Accept and continue"
+        ),
+    ]
 #else
     let cards = [
         OnboardingCard(

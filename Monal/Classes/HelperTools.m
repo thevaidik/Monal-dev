@@ -2522,6 +2522,8 @@ void swizzle(Class c, SEL orig, SEL new)
 #else
 #if IS_QUICKSY
     NSString* resource = [NSString stringWithFormat:@"Quicksy-iOS.%@", [self hexadecimalString:[NSData dataWithBytes: &i length: sizeof(i)]]];
+#elif IS_PRAV
+    NSString* resource = [NSString stringWithFormat:@"Prav-iOS.%@", [self hexadecimalString:[NSData dataWithBytes: &i length: sizeof(i)]]];
 #else
     NSString* resource = [NSString stringWithFormat:@"Monal-iOS.%@", [self hexadecimalString:[NSData dataWithBytes: &i length: sizeof(i)]]];
 #endif

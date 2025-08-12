@@ -71,10 +71,14 @@ NSString* const kiqErrorType = @"error";
 #else //IS_ALPHA
 #if TARGET_OS_MACCATALYST && defined(IS_QUICKSY)
     [pushModule appendString:@"quicksyProdCatalyst"];
+#elif TARGET_OS_MACCATALYST && defined(IS_PRAV)
+    [pushModule appendString:@"pravProdCatalyst"];
 #elif TARGET_OS_MACCATALYST
     [pushModule appendString:@"monalProdCatalyst"];
 #elif defined(IS_QUICKSY)
     [pushModule appendString:@"quicksyProdiOS"];
+#elif defined(IS_PRAV)
+    [pushModule appendString:@"pravProdiOS"];
 #else
     [pushModule appendString:@"monalProdiOS"];
 #endif
