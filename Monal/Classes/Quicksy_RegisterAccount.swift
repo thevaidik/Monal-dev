@@ -6,14 +6,22 @@
 //  Copyright © 2024 monal-im.org. All rights reserved.
 //
 
+#if IS_QUICKSY
 let QUICKSY_BASE_URL = "https://api.quicksy.im";
+#else
+let QUICKSY_BASE_URL = "https://api.prav.app";
+#endif
 
 func sendSMSRequest(to number:String) -> Promise<(data: Data, response: URLResponse)> {
     var rq = URLRequest(url: URL(string: "\(QUICKSY_BASE_URL)/authentication/\(number)")!)
     rq.httpMethod = "GET"
     rq.addValue(Locale.current.languageCode ?? "en", forHTTPHeaderField: "Accept-Language")
     rq.addValue(UIDevice.current.identifierForVendor?.uuidString.lowercased() ?? UUID().uuidString.lowercased(), forHTTPHeaderField: "Installation-Id")
+#if IS_QUICKSY
     rq.addValue("Quicksy/2.10.0", forHTTPHeaderField: "User-Agent")
+#else
+    rq.addValue("Prav/2.11.0", forHTTPHeaderField: "User-Agent")
+#endif
     DDLogDebug("Request: \(String(describing:rq))")
     if let headers = rq.allHTTPHeaderFields {
         for (key, value) in headers {
@@ -29,7 +37,11 @@ func sendRegisterRequest(number:String, pin:String, password:String) -> Promise<
     var rq = URLRequest(url: URL(string: "\(QUICKSY_BASE_URL)/password")!)
     rq.httpMethod = "POST"
     rq.addValue(HelperTools.encodeBase64(with:"\(number)\0\(pin)"), forHTTPHeaderField: "Authorization")
+#if IS_QUICKSY
     rq.addValue("Quicksy/2.10.0", forHTTPHeaderField: "User-Agent")
+#else
+    rq.addValue("Prav/2.11.0", forHTTPHeaderField: "User-Agent")
+#endif
     rq.httpBody = password.data(using:.utf8)
     DDLogDebug("Request: \(String(describing:rq))")
     if let headers = rq.allHTTPHeaderFields {
@@ -107,7 +119,11 @@ struct Quicksy_RegisterAccount: View {
                 startLoginTimeout()
                 showLoadingOverlay(overlay, headline:NSLocalizedString("Logging in", comment: ""))
                 self.errorObserverEnabled = true
+#if IS_QUICKSY
                 self.newAccountNo = MLXMPPManager.sharedInstance().login("\(number)@quicksy.im", password: password)
+#else
+                self.newAccountNo = MLXMPPManager.sharedInstance().login("\(number)@prav.app", password: password)
+#endif
                 if(self.newAccountNo == nil) {
                     currentTimeout = nil // <- disable timeout on error
                     errorObserverEnabled = false
@@ -142,7 +158,11 @@ struct Quicksy_RegisterAccount: View {
     private func showSuccessAlert() {
         hideLoadingOverlay(overlay)
         alertPrompt.title = Text("Success!")
+#if IS_QUICKSY
         alertPrompt.message = Text("Quicksy is now set up and connected.")
+#else
+        alertPrompt.message = Text("Prav is now set up and connected.")
+#endif
         showAlert = true
     }
 
@@ -183,7 +203,11 @@ struct Quicksy_RegisterAccount: View {
                         .foregroundColor(.primary)
                         .padding(.bottom, 8)
                     
+#if IS_QUICKSY
                     Text("Quicksy will send an SMS message (carrier charges may apply) to verify your phone number. Enter your country code and phone number:")
+#else
+                    Text("Prav will send an SMS message (carrier charges may apply) to verify your phone number. Enter your country code and phone number:")
+#endif
                     
                     HStack {
                         Text("Country:")
